@@ -1,76 +1,67 @@
-import React, { useState, useEffect } from "react";
-import { useParams } from "react-router-dom"; 
+import React, { useState, useEffect } from 'react';
 
-const UpdateItem = () => {
-    const { id } = useParams(); 
-    const API_URI = `http://localhost:8000/doors/${id}`;
+const UpdateItem = ({ item }) => {
+ 
+  const [updatedItem, setUpdatedItem] = useState(item?.name || '');  
+  const [response, setResponse] = useState(''); 
+  const [error, setError] = useState(''); 
 
-    const [item, setItem] = useState(null);
-    const [updatedName, setUpdatedName] = useState("");
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
+ 
+  const handleUpdateItem = async (e) => {
+    e.preventDefault();  
+    
 
-    useEffect(() => {
-        const fetchItem = async () => {
-            try {
-                const response = await fetch(API_URI);
-                if (!response.ok) throw new Error("Failed to fetch item");
+    const API_URI = `http://localhost:8000/doors/${item.id}`; // Replace with actual API URL
 
-                const data = await response.json();
-                setItem(data);
-                setUpdatedName(data.name); 
-            } catch (err) {
-                setError(err.message);
-            } finally {
-                setLoading(false);
-            }
-        };
+    try {
+      // Send the updated data to the API
+      const res = await fetch(API_URI, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ name: updatedItem }), // Assuming 'name' is the property to update
+      });
 
-        fetchItem();
-    }, [id]); 
+      if (!res.ok) {
+        throw new Error('Failed to update item');
+      }
 
-    const handleChange = (e) => {
-        setUpdatedName(e.target.value);
-    };
+      const data = await res.json();
+      setResponse('Item updated successfully!');
+      // Optionally, update the item with the new data from the response
+    } catch (error) {
+      setError('Error updating item: ' + error.message);
+    }
+  };
 
-    const handleUpdate = async () => {
-        try {
-            const response = await fetch(API_URI, {
-                method: "PUT",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ name: updatedName }),
-            });
+  // 3. Create a function to handle the form input changes
+  const handleInputChange = (e) => {
+    setUpdatedItem(e.target.value);  // Update the updatedItem state with the user's input
+  };
 
-            if (!response.ok) throw new Error("Failed to update item");
+  return (
+    <div>
+      <h2>Update Item</h2>
 
-            const updatedItem = await response.json();
+      {/* Displaying error and success messages */}
+      {error && <p style={{ color: 'red' }}>{error}</p>}
+      {response && <p style={{ color: 'green' }}>{response}</p>}
 
-            
-            alert("Item updated successfully!");
-
-            
-            setItem(updatedItem);
-        } catch (err) {
-            setError(err.message);
-        }
-    };
-
-    if (loading) return <p>Loading item...</p>;
-    if (error) return <p style={{ color: "red" }}>Error: {error}</p>;
-    if (!item) return <p>No item found.</p>;
-
-    return (
-        <div>
-            <h2>Update Item</h2>
-
-
-            <p><strong>Current Item:</strong> {item.name}</p>
-
-            
-            <input type="text" value={updatedName} onChange={handleChange} />
-            <button onClick={handleUpdate}>Update</button>
-        </div>
-    );
+      <form onSubmit={handleUpdateItem}>
+        <label>
+          Item Name:
+          <input
+            type="text"
+            value={updatedItem}
+            onChange={handleInputChange}
+            placeholder="Update item name"
+          />
+        </label>
+        <button type="submit">Update Item</button>
+      </form>
+    </div>
+  );
 };
 
 export default UpdateItem;
